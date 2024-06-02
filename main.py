@@ -3,6 +3,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 from PIL import Image
 import json
+import publisher
 from firebase_admin import db
 
 cred1 = credentials.Certificate("uplifted-env-424901-t2-firebase-adminsdk-1n3uy-07457c1d15.json")
@@ -22,15 +23,14 @@ ref = db.reference('Inventory')
 # })
 
 #adding item
-data = {
-    'name': 'Kellogs Cereal Box',
-        'Count': 5,
-        'image': 'Cereal.jpeg',
-        'Aisle': '3',
-        'Missing': False,
-        'Misplaced': False
-        }
-ref.child('Kellogs Cereal Box').set(data) 
+# data = {
+#     'name': 'Kellogs Cereal Box',
+#         'Aisle': 5,
+#         'Shelf': '3',
+#         'Misplaced': False,
+#          'InStock': True,
+# }      
+# ref.child('Kellogs Cereal Box').set(data) 
 
 
 storage_client = storage.Client()  # No additional arguments needed
@@ -54,10 +54,19 @@ bucket = storage_client.bucket(bucket_name)
 # blob.upload_from_filename(blob_name)
 
 # Updating inventory data
+# for item in ref.get():
+#    val = ref.child(item).child('Count').get()
+#    if val == 0:
+#        print("Item is out of stock")
+#    else:
+#        ref.child(item).update({'Count': val - 1}) 
+#        print('Count: ', ref.child(item).child('Count').get())
+
+def add_stock(item_name):
+    count = ref.child(item_name).child('InStock').get()
+    ref.child(item_name).update({'InStock':not count})
+    return ref.child(item_name).child('InStock').get()
+
 for item in ref.get():
-   val = ref.child(item).child('Count').get()
-   if val == 0:
-       print("Item is out of stock")
-   else:
-       ref.child(item).update({'Count': val - 1}) 
-       print('Count: ', ref.child(item).child('Count').get())
+    val = add_stock(item)
+    publisher.send_message(item, ref.child(item).child('Aisle').get(), ref.child(item).child('Shelf').get(), val)
