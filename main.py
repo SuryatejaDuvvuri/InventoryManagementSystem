@@ -4,7 +4,6 @@ from firebase_admin import credentials, db
 from PIL import Image
 import json
 import publisher
-from firebase_admin import db
 
 cred1 = credentials.Certificate("uplifted-env-424901-t2-firebase-adminsdk-1n3uy-07457c1d15.json")
 firebase_admin.initialize_app(cred1, {'databaseURL': "https://uplifted-env-424901-t2-default-rtdb.firebaseio.com/"})
@@ -32,6 +31,15 @@ ref = db.reference('Inventory')
 # }      
 # ref.child('Kellogs Cereal Box').set(data) 
 
+def add_item(name, aisle, shelf, misplaced, instock):
+    data = {
+        'name': name,  
+        'Aisle': aisle,
+        'Shelf': shelf,
+        'Misplaced': misplaced,
+        'InStock': instock,
+    }
+    ref.child(name).set(data)
 
 storage_client = storage.Client()  # No additional arguments needed
 
@@ -40,6 +48,13 @@ bucket_name = 'cs131-tests'
 bucket = storage_client.bucket(bucket_name)
 
 # List blobs (files) in the bucket
+blobs = bucket.list_blobs()
+for blob in blobs:
+    print(blob)
+    print(blob.name)
+    
+
+
     
 
 # # Downloading and uploading images of grocery items
@@ -67,6 +82,6 @@ def add_stock(item_name):
     ref.child(item_name).update({'InStock':not count})
     return ref.child(item_name).child('InStock').get()
 
-for item in ref.get():
-    val = add_stock(item)
-    publisher.send_message(item, ref.child(item).child('Aisle').get(), ref.child(item).child('Shelf').get(), val)
+# for item in ref.get():
+#     val = add_stock(item)
+#     publisher.send_message(item, ref.child(item).child('Aisle').get(), ref.child(item).child('Shelf').get(), val)
