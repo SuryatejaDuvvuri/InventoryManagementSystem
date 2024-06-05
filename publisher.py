@@ -17,4 +17,4 @@ def send_message(item_name, aisle, shelf, in_stock):
         data = f'ALERT!!! {item_name} is out of stock!! Please go to Aisle {aisle}, Shelf {shelf} to refill the item!'.encode('utf-8')
         future = publisher.publish(topic, data)
         print('published message id: {}'.format(future.result()))
-       
+     

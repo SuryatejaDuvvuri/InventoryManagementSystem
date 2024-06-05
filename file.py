@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
-import time
 import random
-import main
+import time
+import main, reciever
 from typing import Sequence
 from google.cloud import storage
 from google.cloud import vision
@@ -28,7 +28,7 @@ def analyze_image_from_uri(
     return response
 
 
-def print_text(response: vision.AnnotateImageResponse):
+def print_text(response: vision.AnnotateImageResponse, name: str):
     # print("=" * 80)
     illegal_chars = [".", "#", "$", "[", "]"]
     Itemname = ""
@@ -55,16 +55,21 @@ def print_text(response: vision.AnnotateImageResponse):
             shelf = Itemname[index2:index2+1]
             instock = True
             misplaced = False
-            item_name = Itemname[1:index1]
+            # if len(Itemname) > index1:
+            #     item_name = name
+            item_name = Itemname[1:20]
         except ValueError:
-             print("Substring 'Aisle' not found in Itemname")
-             aisle = str(random.randint(1, 8))
-             shelf = str(random.randint(1, 8))
-             misplaced = True
-             item_name = Itemname[1:30]
-       
-    if item_name:
-        main.add_item(item_name, aisle, shelf, misplaced, instock)
+            print("Substring 'Aisle' not found in Itemname")
+            aisle = str(random.randint(1, 8))
+            shelf = str(random.randint(1, 8))
+            instock = True
+            misplaced = False
+            # if len(Itemname) > 30:
+            #     item_name = name
+            item_name = Itemname[1:20]
+      
+    if len(item_name) != 0:
+        main.add_item(item_name, aisle, shelf, misplaced, instock, name)
 # def print_objects(response: vision.AnnotateImageResponse):
 #     print("=" * 80)
 #     for obj in response.localized_object_annotations:
@@ -121,18 +126,19 @@ def check_changes():
             image_uri = f"gs://{bucket_name}/{blob.name}"
             response = analyze_image_from_uri(image_uri, features)
             last_checked = blob.updated
-            print_text(response)
+            print_text(response, blob.name)
 
 while True:
     check_changes()
+    # reciever.check_alerts()
+    reciever.check_alerts()
     time.sleep(10)  # Check every minute
 
-    
+   
 
 
 # image_uri = "gs://cs131-tests/test.png"
 # features = [vision.Feature.Type.TEXT_DETECTION]
 # response = analyze_image_from_uri(image_uri, features)
 # print_text(response)
-        
-    
+

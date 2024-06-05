@@ -1,12 +1,13 @@
 from google.cloud import storage
+import publisher
 import firebase_admin
 from firebase_admin import credentials, db
-from PIL import Image
 import json
 import publisher
 
-cred1 = credentials.Certificate("uplifted-env-424901-t2-firebase-adminsdk-1n3uy-07457c1d15.json")
-firebase_admin.initialize_app(cred1, {'databaseURL': "https://uplifted-env-424901-t2-default-rtdb.firebaseio.com/"})
+if not firebase_admin._apps:
+    cred1 = credentials.Certificate("uplifted-env-424901-t2-firebase-adminsdk-1n3uy-07457c1d15.json")
+    firebase_admin.initialize_app(cred1, {'databaseURL': "https://uplifted-env-424901-t2-default-rtdb.firebaseio.com/"})
 ref = db.reference('Inventory') 
 
 
@@ -31,13 +32,14 @@ ref = db.reference('Inventory')
 # }      
 # ref.child('Kellogs Cereal Box').set(data) 
 
-def add_item(name, aisle, shelf, misplaced, instock):
+def add_item(name, aisle, shelf, misplaced, instock, itemType):
     data = {
         'name': name,  
         'Aisle': aisle,
         'Shelf': shelf,
         'Misplaced': misplaced,
         'InStock': instock,
+        'Type': itemType
     }
     ref.child(name).set(data)
 
@@ -48,10 +50,10 @@ bucket_name = 'cs131-tests'
 bucket = storage_client.bucket(bucket_name)
 
 # List blobs (files) in the bucket
-blobs = bucket.list_blobs()
-for blob in blobs:
-    print(blob)
-    print(blob.name)
+# blobs = bucket.list_blobs()
+# for blob in blobs:
+#     print(blob)
+#     print(blob.name)
     
 
 
@@ -77,10 +79,33 @@ for blob in blobs:
 #        ref.child(item).update({'Count': val - 1}) 
 #        print('Count: ', ref.child(item).child('Count').get())
 
-def add_stock(item_name):
-    count = ref.child(item_name).child('InStock').get()
-    ref.child(item_name).update({'InStock':not count})
-    return ref.child(item_name).child('InStock').get()
+# blob_name = "Ragu.jpeg"
+# blob = bucket.blob(blob_name)
+# blob.upload_from_filename(blob_name)
+
+def addImage(image_name):
+    blob = bucket.blob(image_name)
+    blob.upload_from_filename(image_name)
+    print("Image added")
+
+def send_signal(item_name, stock):
+    # count = ref.child(item_name).child('InStock').get()
+    for item in ref.get():
+        val = str(ref.child(item).child('Type').get())
+        if item_name in val:
+            item_name = item
+            break
+    ref.child(item_name).update({'InStock':stock})
+    valTwo = str(ref.child(item_name).child('Type').get())
+    publisher.send_message(valTwo, ref.child(item_name).child('Aisle').get(), ref.child(item_name).child('Shelf').get(), stock)
+    
+
+# add_image("Ragu.jpeg")
+# while True:
+# file.check_changes()
+# reciever.check_alerts()
+# time.sleep(10)  # Check every 10 seconds
+
 
 # for item in ref.get():
 #     val = add_stock(item)
